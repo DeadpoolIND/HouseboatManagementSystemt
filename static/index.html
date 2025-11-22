@@ -1,0 +1,629 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Houseboat Management — Admin</title>
+  <style>
+    :root{--bg:#f7fafc;--card:#ffffff;--accent:#0b5cff;--muted:#64748b;--danger:#ef4444;--glass:rgba(11,92,255,0.08)}
+    html,body{height:100%;margin:0;font-family:Inter,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:#0f172a}
+    .app{display:grid;grid-template-columns:260px 1fr;gap:18px;height:100vh}
+    .sidebar{background:var(--card);padding:18px;border-right:1px solid #e6edf3;box-shadow:0 6px 18px rgba(2,6,23,0.04);display:flex;flex-direction:column}
+    .brand{font-weight:700;font-size:18px;margin-bottom:12px}
+    .nav{display:flex;flex-direction:column;gap:6px}
+    .nav button{background:transparent;border:none;padding:10px 12px;text-align:left;border-radius:8px;cursor:pointer;color:var(--muted);font-weight:600}
+    .nav button.active{background:var(--glass);color:var(--accent)}
+    .content{padding:20px;overflow:auto}
+    .topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+    .search{display:flex;gap:8px;align-items:center}
+    .card{background:var(--card);padding:16px;border-radius:10px;border:1px solid #e6edf3;box-shadow:0 6px 18px rgba(2,6,23,0.02)}
+    h2{margin:0 0 12px;font-size:16px}
+    .row{display:flex;gap:12px;flex-wrap:wrap}
+    .btn{background:var(--accent);color:white;border:none;padding:8px 12px;border-radius:8px;cursor:pointer;font-weight:700}
+    .btn.ghost{background:transparent;color:var(--accent);border:1px solid rgba(11,92,255,0.12)}
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:8px 10px;text-align:left;border-bottom:1px solid #f1f5f9;font-size:13px}
+    form{display:grid;gap:10px}
+    label{font-size:13px;color:var(--muted)}
+    input,select,textarea{padding:10px;border-radius:8px;border:1px solid #e6edf3;background:white;font-size:14px}
+    .toolbar{display:flex;gap:8px;align-items:center}
+    .muted{color:var(--muted);font-size:13px}
+    .small{font-size:12px;color:var(--muted)}
+    .grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+    @media (max-width:900px){.app{grid-template-columns:1fr} .sidebar{display:flex;flex-direction:row;gap:8px;overflow:auto;height:auto}.grid-3{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">Houseboat Management</div>
+      <nav class="nav" role="navigation" aria-label="Primary">
+        <button class="nav-btn active" data-view="dashboard">Dashboard</button>
+        <button class="nav-btn" data-view="owners">Owners</button>
+        <button class="nav-btn" data-view="boats">Boats</button>
+        <button class="nav-btn" data-view="clients">Clients</button>
+        <button class="nav-btn" data-view="routes">Routes</button>
+        <button class="nav-btn" data-view="services">Services</button>
+        <button class="nav-btn" data-view="bookings">Bookings</button>
+      </nav>
+      <div style="flex:1"></div>
+      <div class="small muted">v1.0 • Local demo</div>
+    </aside>
+
+    <main class="content">
+      <div class="topbar">
+        <div>
+          <h2 id="view-title">Dashboard</h2>
+          <div class="small muted" id="view-sub">Overview of boats, bookings and revenue</div>
+        </div>
+        <div class="toolbar">
+          <input id="globalSearch" placeholder="Search..." style="padding:8px 10px;border-radius:8px;border:1px solid #e6edf3" />
+          <button class="btn ghost" id="refreshBtn">Refresh</button>
+        </div>
+      </div>
+
+      <section id="views">
+
+        <div class="view" data-view="dashboard">
+          <div class="grid-3">
+            <div class="card">
+              <div class="muted">Total Boats</div>
+              <div style="font-size:22px;font-weight:800" id="stat-boats">—</div>
+            </div>
+            <div class="card">
+              <div class="muted">Active Bookings</div>
+              <div style="font-size:22px;font-weight:800" id="stat-bookings">—</div>
+            </div>
+            <div class="card">
+              <div class="muted">Clients</div>
+              <div style="font-size:22px;font-weight:800" id="stat-clients">—</div>
+            </div>
+          </div>
+
+          <div style="height:18px"></div>
+          <div class="card">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+              <div><strong>Recent Bookings</strong><div class="small muted">Most recent 10</div></div>
+              <div><button class="btn" data-action="goto" data-view="bookings">View all</button></div>
+            </div>
+            <table id="recentBookings"><thead><tr><th>ID</th><th>Client</th><th>Boat</th><th>From</th><th>Status</th></tr></thead><tbody><tr><td colspan="5" class="small muted">No data</td></tr></tbody></table>
+          </div>
+        </div>
+
+        <div class="view" style="display:none" data-view="owners">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+            <div><strong>Owners</strong><div class="small muted">Manage boat owners</div></div>
+            <div><button class="btn" data-action="new" data-entity="owner">+ New Owner</button></div>
+          </div>
+          <div class="card" id="ownersList"><table><thead><tr><th>ID</th><th>Name</th><th>License</th><th>DOB</th><th></th></tr></thead><tbody><tr><td colspan="5" class="small muted">No owners yet</td></tr></tbody></table></div>
+
+          <div style="height:12px"></div>
+          <div class="card" id="ownerFormWrap" style="display:none">
+            <h3>Create Owner</h3>
+            <form id="ownerForm">
+              <label>Name<input name="owner_name" required></label>
+              <label>License No<input name="license_no"></label>
+              <label>Date of Birth<input name="dob" type="date"></label>
+              <div style="display:flex;gap:8px;margin-top:8px"><button class="btn" type="submit">Save</button><button type="button" class="btn ghost" data-action="cancel-form">Cancel</button></div>
+            </form>
+          </div>
+        </div>
+
+        <div class="view" style="display:none" data-view="boats">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+            <div><strong>Boats</strong><div class="small muted">Register and assign services</div></div>
+            <div><button class="btn" data-action="new" data-entity="boat">+ New Boat</button></div>
+          </div>
+          <div class="card" id="boatsList"><table><thead><tr><th>ID</th><th>Number</th><th>Capacity</th><th>Owner</th><th>Service</th><th></th></tr></thead><tbody><tr><td colspan="6" class="small muted">No boats yet</td></tr></tbody></table></div>
+
+          <div style="height:12px"></div>
+          <div class="card" id="boatFormWrap" style="display:none">
+            <h3>New Boat</h3>
+            <form id="boatForm">
+              <label>Boat Number<input name="boat_number" required></label>
+              <label>Capacity<input name="capacity" type="number" min="1"></label>
+              <label>Owner<select name="owner_id"></select></label>
+              <label>Service<select name="service_id"></select></label>
+              <div style="display:flex;gap:8px;margin-top:8px"><button class="btn" type="submit">Save</button><button type="button" class="btn ghost" data-action="cancel-form">Cancel</button></div>
+            </form>
+          </div>
+        </div>
+
+        <div class="view" style="display:none" data-view="clients">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+            <div><strong>Clients</strong><div class="small muted">Guest records</div></div>
+            <div><button class="btn" data-action="new" data-entity="client">+ New Client</button></div>
+          </div>
+          <div class="card" id="clientsList"><table><thead><tr><th>ID</th><th>Name</th><th>Phone</th><th>City</th><th></th></tr></thead><tbody><tr><td colspan="5" class="small muted">No clients yet</td></tr></tbody></table></div>
+
+          <div style="height:12px"></div>
+          <div class="card" id="clientFormWrap" style="display:none">
+            <h3>New Client</h3>
+            <form id="clientForm">
+              <label>First Name<input name="first_name" required></label>
+              <label>Last Name<input name="last_name"></label>
+              <label>Phone<input name="phone"></label>
+              <label>City<input name="city"></label>
+              <label>Country<input name="country"></label>
+              <label>DOB<input name="dob" type="date"></label>
+              <div style="display:flex;gap:8px;margin-top:8px"><button class="btn" type="submit">Save</button><button type="button" class="btn ghost" data-action="cancel-form">Cancel</button></div>
+            </form>
+          </div>
+        </div>
+
+        <div class="view" style="display:none" data-view="routes">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+            <div><strong>Routes</strong><div class="small muted">Source, destination and spots</div></div>
+            <div><button class="btn" data-action="new" data-entity="route">+ New Route</button></div>
+          </div>
+          <div class="card" id="routesList"><table><thead><tr><th>ID</th><th>Source</th><th>Destination</th><th>Spots</th><th></th></tr></thead><tbody><tr><td colspan="5" class="small muted">No routes yet</td></tr></tbody></table></div>
+
+          <div style="height:12px"></div>
+          <div class="card" id="routeFormWrap" style="display:none">
+            <h3>New Route</h3>
+            <form id="routeForm">
+              <label>Source<input name="source" required></label>
+              <label>Destination<input name="destination" required></label>
+              <label>Spots (comma separated)<input name="spots"></label>
+              <div style="display:flex;gap:8px;margin-top:8px"><button class="btn" type="submit">Save</button><button type="button" class="btn ghost" data-action="cancel-form">Cancel</button></div>
+            </form>
+          </div>
+        </div>
+
+        <div class="view" style="display:none" data-view="services">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+            <div><strong>Services</strong><div class="small muted">Add service packages</div></div>
+            <div><button class="btn" data-action="new" data-entity="service">+ New Service</button></div>
+          </div>
+          <div class="card" id="servicesList"><table><thead><tr><th>ID</th><th>Type</th><th>Wifi</th><th>Rate</th><th></th></tr></thead><tbody><tr><td colspan="5" class="small muted">No services yet</td></tr></tbody></table></div>
+
+          <div style="height:12px"></div>
+          <div class="card" id="serviceFormWrap" style="display:none">
+            <h3>New Service</h3>
+            <form id="serviceForm">
+              <label>Service Type<input name="service_type" required></label>
+              <label>Wifi Bandwidth<input name="wifi_bandwidth"></label>
+              <label>Cuisine<input name="cuisine"></label>
+              <label>Has Bar<select name="has_bar"><option value="0">No</option><option value="1">Yes</option></select></label>
+              <label>Rate<input name="rate" type="number" step="0.01"></label>
+              <div style="display:flex;gap:8px;margin-top:8px"><button class="btn" type="submit">Save</button><button type="button" class="btn ghost" data-action="cancel-form">Cancel</button></div>
+            </form>
+          </div>
+        </div>
+
+        <div class="view" style="display:none" data-view="bookings">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+            <div><strong>Bookings</strong><div class="small muted">Create and manage bookings</div></div>
+            <div><button class="btn" data-action="new" data-entity="booking">+ New Booking</button></div>
+          </div>
+          <div class="card" id="bookingsList"><table><thead><tr><th>ID</th><th>Client</th><th>Boat</th><th>Route</th><th>From</th><th>Status</th><th></th></tr></thead><tbody><tr><td colspan="7" class="small muted">No bookings yet</td></tr></tbody></table></div>
+
+          <div style="height:12px"></div>
+          <div class="card" id="bookingFormWrap" style="display:none">
+            <h3>New Booking</h3>
+            <form id="bookingForm">
+              <label>Client<select name="client_id"></select></label>
+              <label>Boat<select name="boat_id"></select></label>
+              <label>Route<select name="route_id"></select></label>
+              <label>From Date<input name="from_date" type="datetime-local" required></label>
+              <label>To Date<input name="to_date" type="datetime-local"></label>
+              <label>Payment Type<select name="payment_type"><option>cash</option><option>card</option><option>online</option></select></label>
+              <label>Payment Status<select name="payment_status"><option>pending</option><option>paid</option><option>cancelled</option></select></label>
+              <label>Amount<input name="payment_amount" type="number" step="0.01"></label>
+              <div style="display:flex;gap:8px;margin-top:8px"><button class="btn" type="submit">Save</button><button type="button" class="btn ghost" data-action="cancel-form">Cancel</button></div>
+            </form>
+          </div>
+        </div>
+
+      </section>
+
+    </main>
+  </div>
+
+  <script>
+  (function(){
+    const navBtns = document.querySelectorAll('.nav-btn');
+    const views = document.querySelectorAll('.view');
+    const title = document.getElementById('view-title');
+    const subtitle = document.getElementById('view-sub');
+
+    const api = {
+      get: async (entity) => {
+        const res = await fetch(`/api/${entity}`);
+        if (!res.ok) throw new Error(await res.text());
+        return res.json();
+      },
+      post: async (entity, data) => {
+        const res = await fetch(`/api/${entity}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data)
+        });
+        if (!res.ok) throw new Error(await res.text());
+        return res.json();
+      },
+      del: async (entity, id) => {
+        const res = await fetch(`/api/${entity}/${id}`, { method: "DELETE" });
+        if (!res.ok) throw new Error(await res.text());
+      }
+    };
+
+    function showView(name){
+      views.forEach(v=>v.style.display = v.dataset.view === name ? '' : 'none');
+      navBtns.forEach(b=>b.classList.toggle('active', b.dataset.view === name));
+      title.textContent = name.charAt(0).toUpperCase() + name.slice(1);
+      subtitle.textContent = ({dashboard:'Overview of boats, bookings and revenue', owners:'Manage owners', boats:'Manage boats', clients:'Manage clients', routes:'Manage routes', services:'Manage services', bookings:'Manage bookings'})[name] || '';
+    }
+
+    navBtns.forEach(b=>b.addEventListener('click',()=>showView(b.dataset.view)));
+    document.querySelectorAll('[data-action="goto"]').forEach(b=>b.addEventListener('click',e=>showView(e.target.dataset.view)));
+
+    document.querySelectorAll('[data-action="new"]').forEach(btn=>{
+      btn.addEventListener('click',()=>{
+        const entity = btn.dataset.entity;
+        openForm(entity);
+      });
+    });
+
+    document.querySelectorAll('[data-action="cancel-form"]').forEach(btn=>btn.addEventListener('click',closeAllForms));
+
+    function openForm(entity){
+      closeAllForms();
+      switch(entity){
+        case 'owner': document.getElementById('ownerFormWrap').style.display='block';showView('owners');break;
+        case 'boat': populateOwnerServiceSelects();document.getElementById('boatFormWrap').style.display='block';showView('boats');break;
+        case 'client': document.getElementById('clientFormWrap').style.display='block';showView('clients');break;
+        case 'route': document.getElementById('routeFormWrap').style.display='block';showView('routes');break;
+        case 'service': document.getElementById('serviceFormWrap').style.display='block';showView('services');break;
+        case 'booking': populateBookingSelects();document.getElementById('bookingFormWrap').style.display='block';showView('bookings');break;
+      }
+    }
+
+    function closeAllForms(){document.querySelectorAll('[id$="FormWrap"]').forEach(el=>el.style.display='none');}
+
+    async function populateOwnerServiceSelects(){
+      try {
+        const [owners, services] = await Promise.all([api.get('owners'), api.get('services')]);
+        const ownerSelects = document.querySelectorAll('select[name="owner_id"]');
+        ownerSelects.forEach(s=>{
+          s.innerHTML = '<option value=\"\">-- select owner --</option>';
+          owners.forEach(o=> s.append(new Option(o.name || (`Owner ${o.id}`), o.id)));
+        });
+        const serviceSelects = document.querySelectorAll('select[name="service_id"]');
+        serviceSelects.forEach(s=>{
+          s.innerHTML = '<option value=\"\">-- select service --</option>';
+          services.forEach(sv=> s.append(new Option(sv.service_type || (`Service ${sv.id}`), sv.id)));
+        });
+      } catch(err){}
+    }
+
+    async function populateBookingSelects(){
+      try {
+        const [clients, boats, routes] = await Promise.all([api.get('clients'), api.get('boats'), api.get('routes')]);
+        const csel = document.querySelector('select[name=\"client_id\"]');
+        if(csel){ csel.innerHTML=''; clients.forEach(c=> csel.append(new Option((c.first_name||'') + ' ' + (c.last_name||''), c.id))); }
+
+        const bsel = document.querySelector('select[name=\"boat_id\"]');
+        if(bsel){ bsel.innerHTML=''; boats.forEach(b=> bsel.append(new Option(b.boat_number || `Boat ${b.id}`, b.id))); }
+
+        const rsel = document.querySelector('select[name=\"route_id\"]');
+        if(rsel){ rsel.innerHTML=''; routes.forEach(r=> rsel.append(new Option(r.source + ' → ' + r.destination, r.id))); }
+      } catch(err){}
+    }
+
+    async function refreshAll(){
+      try {
+        const [owners, services, boats, clients, routes, bookings] = await Promise.all([
+          api.get("owners"),
+          api.get("services"),
+          api.get("boats"),
+          api.get("clients"),
+          api.get("routes"),
+          api.get("bookings")
+        ]);
+
+        document.getElementById('stat-boats').textContent = boats.length;
+        document.getElementById('stat-bookings').textContent = bookings.length;
+        document.getElementById('stat-clients').textContent = clients.length;
+
+        const ownersTb = document.querySelector('#ownersList tbody');
+        ownersTb.innerHTML = owners.length ? owners.map(o=>`
+          <tr>
+            <td>${o.id}</td>
+            <td>${o.name||''}</td>
+            <td>${o.license_no||''}</td>
+            <td>${o.dob||''}</td>
+            <td><button data-action="del-owner" data-id="${o.id}" class="btn ghost">Delete</button></td>
+          </tr>`).join('') : `<tr><td colspan="5" class="small muted">No owners found</td></tr>`;
+
+        const servicesTb = document.querySelector('#servicesList tbody');
+        servicesTb.innerHTML = services.length ? services.map(s=>`
+          <tr>
+            <td>${s.id}</td>
+            <td>${s.service_type}</td>
+            <td>${s.wifi_bandwidth||''}</td>
+            <td>${s.rate||''}</td>
+            <td><button data-action="del-service" data-id="${s.id}" class="btn ghost">Delete</button></td>
+          </tr>`).join('') : `<tr><td colspan="5" class="small muted">No services found</td></tr>`;
+
+        const boatsTb = document.querySelector('#boatsList tbody');
+        boatsTb.innerHTML = boats.length ? boats.map(b=>`
+          <tr>
+            <td>${b.id}</td>
+            <td>${b.boat_number||''}</td>
+            <td>${b.capacity||''}</td>
+            <td>${b.owner_name||''}</td>
+            <td>${b.service_type||''}</td>
+            <td><button data-action="del-boat" data-id="${b.id}" class="btn ghost">Delete</button></td>
+          </tr>`).join('') : `<tr><td colspan="6" class="small muted">No boats found</td></tr>`;
+
+        const clientsTb = document.querySelector('#clientsList tbody');
+        clientsTb.innerHTML = clients.length ? clients.map(c=>`
+          <tr>
+            <td>${c.id}</td>
+            <td>${c.first_name||''} ${c.last_name||''}</td>
+            <td>${c.client_phone_number || c.phone || ''}</td>
+            <td>${c.client_city || c.city || ''}</td>
+            <td><button data-action="del-client" data-id="${c.id}" class="btn ghost">Delete</button></td>
+          </tr>`).join('') : `<tr><td colspan="5" class="small muted">No clients found</td></tr>`;
+
+        const routesTb = document.querySelector('#routesList tbody');
+        routesTb.innerHTML = routes.length ? routes.map(r=>`
+          <tr>
+            <td>${r.id}</td>
+            <td>${r.source}</td>
+            <td>${r.destination}</td>
+            <td>${(r.spots||[]).join(', ')}</td>
+            <td><button data-action="del-route" data-id="${r.id}" class="btn ghost">Delete</button></td>
+          </tr>`).join('') : `<tr><td colspan="5" class="small muted">No routes found</td></tr>`;
+
+        const bookingsTb = document.querySelector('#bookingsList tbody');
+        bookingsTb.innerHTML = bookings.length ? bookings.map(bk=>`
+          <tr>
+            <td>${bk.id}</td>
+            <td>${bk.client_first || ''} ${bk.client_last || ''}</td>
+            <td>${bk.boat_number || ''}</td>
+            <td>${bk.route_source ? bk.route_source + '→' + bk.route_destination : ''}</td>
+            <td>${bk.from_date || ''}</td>
+            <td>${bk.payment_status || ''}</td>
+            <td><button data-action="del-booking" data-id="${bk.id}" class="btn ghost">Delete</button></td>
+          </tr>`).join('') : `<tr><td colspan="7" class="small muted">No bookings found</td></tr>`;
+
+        const recentBookingsTb = document.querySelector('#recentBookings tbody');
+        const recentBookings = bookings.slice(0, 10);
+        recentBookingsTb.innerHTML = recentBookings.length ? recentBookings.map(bk=>`
+          <tr>
+            <td>${bk.id}</td>
+            <td>${bk.client_first || ''} ${bk.client_last || ''}</td>
+            <td>${bk.boat_number || ''}</td>
+            <td>${bk.from_date || ''}</td>
+            <td>${bk.payment_status || ''}</td>
+          </tr>`).join('') : `<tr><td colspan="5" class="small muted">No data</td></tr>`;
+
+        populateOwnerServiceSelects();
+        populateBookingSelects();
+      } catch(err){}
+    }
+
+    document.addEventListener('click', async e=>{
+      const btn = e.target.closest('button[data-action^="del-"]');
+      if(!btn) return;
+      const id = parseInt(btn.dataset.id,10);
+      const action = btn.dataset.action;
+      try {
+        switch(action){
+          case 'del-owner': await api.del('owners', id); break;
+          case 'del-boat': await api.del('boats', id); break;
+          case 'del-client': await api.del('clients', id); break;
+          case 'del-route': await api.del('routes', id); break;
+          case 'del-service': await api.del('services', id); break;
+          case 'del-booking': await api.del('bookings', id); break;
+        }
+        await refreshAll();
+      } catch(err){}
+    });
+
+    document.getElementById('refreshBtn')?.addEventListener('click',refreshAll);
+
+    document.getElementById('ownerForm')?.addEventListener('submit', async e=>{
+      e.preventDefault();
+      try {
+        const f = new FormData(e.target);
+        await api.post('owners', {
+          owner_name: f.get('owner_name'),
+          date_of_birth: f.get('dob'),
+          license_no: f.get('license_no')
+        });
+        e.target.reset();
+        closeAllForms();
+        await refreshAll();
+      } catch(err){}
+    });
+
+    document.getElementById('serviceForm')?.addEventListener('submit', async e=>{
+      e.preventDefault();
+      try {
+        const f = new FormData(e.target);
+        await api.post('services', {
+          service_type: f.get('service_type'),
+          wifi_bandwidth: f.get('wifi_bandwidth'),
+          cuisine: f.get('cuisine'),
+          has_bar: f.get('has_bar') === '1' || f.get('has_bar') === 'true',
+          rate: parseFloat(f.get('rate') || 0)
+        });
+        e.target.reset();
+        closeAllForms();
+        await refreshAll();
+      } catch(err){}
+    });
+
+    document.getElementById('boatForm')?.addEventListener('submit', async e=>{
+      e.preventDefault();
+      try {
+        const f = new FormData(e.target);
+        await api.post('boats', {
+          boat_number: f.get('boat_number'),
+          capacity: parseInt(f.get('capacity') || 0),
+          owner_id: f.get('owner_id') ? parseInt(f.get('owner_id')) : null,
+          service_id: f.get('service_id') ? parseInt(f.get('service_id')) : null
+        });
+        e.target.reset();
+        closeAllForms();
+        await refreshAll();
+      } catch(err){}
+    });
+
+    document.getElementById('clientForm')?.addEventListener('submit', async e=>{
+      e.preventDefault();
+      try {
+        const f = new FormData(e.target);
+        await api.post('clients', {
+          first_name: f.get('first_name'),
+          last_name: f.get('last_name'),
+          phone: f.get('phone'),
+          city: f.get('city'),
+          country: f.get('country'),
+          dob: f.get('dob')
+        });
+        e.target.reset();
+        closeAllForms();
+        await refreshAll();
+      } catch(err){}
+    });
+
+    document.getElementById('routeForm')?.addEventListener('submit', async e=>{
+      e.preventDefault();
+      try {
+        const f = new FormData(e.target);
+        const spots = (f.get('spots') || '').split(',').map(s=>s.trim()).filter(Boolean);
+        await api.post('routes', {
+          source: f.get('source'),
+          destination: f.get('destination'),
+          spots
+        });
+        e.target.reset();
+        closeAllForms();
+        await refreshAll();
+      } catch(err){}
+    });
+
+    document.getElementById('bookingForm')?.addEventListener('submit', async e=>{
+      e.preventDefault();
+      try {
+        const f = new FormData(e.target);
+        await api.post('bookings', {
+          client_id: f.get('client_id') ? parseInt(f.get('client_id')) : null,
+          boat_id: f.get('boat_id') ? parseInt(f.get('boat_id')) : null,
+          route_id: f.get('route_id') ? parseInt(f.get('route_id')) : null,
+          from_date: f.get('from_date'),
+          to_date: f.get('to_date'),
+          payment_type: f.get('payment_type'),
+          payment_status: f.get('payment_status'),
+          payment_amount: f.get('payment_amount') ? parseFloat(f.get('payment_amount')) : null
+        });
+        e.target.reset();
+        closeAllForms();
+        await refreshAll();
+      } catch(err){}
+    });
+
+    showView('dashboard');
+    refreshAll();
+
+    document.getElementById('globalSearch')?.addEventListener('input', async e=>{
+      const q = e.target.value.trim().toLowerCase();
+      if(!q){ await refreshAll(); return; }
+      try {
+        const [owners, boats, clients, routes, services, bookings] = await Promise.all([
+          api.get('owners'), api.get('boats'), api.get('clients'), api.get('routes'), api.get('services'), api.get('bookings')
+        ]);
+
+        const matchedOwners = owners.filter(o => (o.name||'').toLowerCase().includes(q) || (o.license_no||'').toLowerCase().includes(q));
+        const matchedBoats = boats.filter(b => (b.boat_number||'').toLowerCase().includes(q) || (b.owner_name||'').toLowerCase().includes(q));
+        const matchedClients = clients.filter(c => ((c.first_name||'') + ' ' + (c.last_name||'')).toLowerCase().includes(q) || (c.client_city||c.city||'').toLowerCase().includes(q) || (c.client_phone_number||c.phone||'').toLowerCase().includes(q));
+        const matchedRoutes = routes.filter(r => (r.source||'').toLowerCase().includes(q) || (r.destination||'').toLowerCase().includes(q));
+        const matchedServices = services.filter(s => (s.service_type||'').toLowerCase().includes(q));
+        const matchedBookings = bookings.filter(bk => ((bk.client_first||'') + ' ' + (bk.client_last||'')).toLowerCase().includes(q) || (bk.boat_number||'').toLowerCase().includes(q));
+
+        const ownersTb = document.querySelector('#ownersList tbody');
+        ownersTb.innerHTML = matchedOwners.length ? matchedOwners.map(o=>`
+          <tr>
+            <td>${o.id}</td>
+            <td>${o.name||''}</td>
+            <td>${o.license_no||''}</td>
+            <td>${o.dob||''}</td>
+            <td><button data-action="del-owner" data-id="${o.id}" class="btn ghost">Delete</button></td>
+          </tr>`).join('') : `<tr><td colspan="5" class="small muted">No matches</td></tr>`;
+
+        const boatsTb = document.querySelector('#boatsList tbody');
+        boatsTb.innerHTML = matchedBoats.length ? matchedBoats.map(b=>`
+          <tr>
+            <td>${b.id}</td>
+            <td>${b.boat_number||''}</td>
+            <td>${b.capacity||''}</td>
+            <td>${b.owner_name||''}</td>
+            <td>${b.service_type||''}</td>
+            <td><button data-action="del-boat" data-id="${b.id}" class="btn ghost">Delete</button></td>
+          </tr>`).join('') : `<tr><td colspan="6" class="small muted">No matches</td></tr>`;
+
+        const clientsTb = document.querySelector('#clientsList tbody');
+        clientsTb.innerHTML = matchedClients.length ? matchedClients.map(c=>`
+          <tr>
+            <td>${c.id}</td>
+            <td>${c.first_name||''} ${c.last_name||''}</td>
+            <td>${c.client_phone_number || c.phone || ''}</td>
+            <td>${c.client_city || c.city || ''}</td>
+            <td><button data-action="del-client" data-id="${c.id}" class="btn ghost">Delete</button></td>
+          </tr>`).join('') : `<tr><td colspan="5" class="small muted">No matches</td></tr>`;
+
+        const routesTb = document.querySelector('#routesList tbody');
+        routesTb.innerHTML = matchedRoutes.length ? matchedRoutes.map(r=>`
+          <tr>
+            <td>${r.id}</td>
+            <td>${r.source}</td>
+            <td>${r.destination}</td>
+            <td>${(r.spots||[]).join(', ')}</td>
+            <td><button data-action="del-route" data-id="${r.id}" class="btn ghost">Delete</button></td>
+          </tr>`).join('') : `<tr><td colspan="5" class="small muted">No matches</td></tr>`;
+
+        const servicesTb = document.querySelector('#servicesList tbody');
+        servicesTb.innerHTML = matchedServices.length ? matchedServices.map(s=>`
+          <tr>
+            <td>${s.id}</td>
+            <td>${s.service_type}</td>
+            <td>${s.wifi_bandwidth||''}</td>
+            <td>${s.rate||''}</td>
+            <td><button data-action="del-service" data-id="${s.id}" class="btn ghost">Delete</button></td>
+          </tr>`).join('') : `<tr><td colspan="5" class="small muted">No matches</td></tr>`;
+
+        const bookingsTb = document.querySelector('#bookingsList tbody');
+        bookingsTb.innerHTML = matchedBookings.length ? matchedBookings.map(bk=>`
+          <tr>
+            <td>${bk.id}</td>
+            <td>${bk.client_first || ''} ${bk.client_last || ''}</td>
+            <td>${bk.boat_number || ''}</td>
+            <td>${bk.route_source ? bk.route_source + '→' + bk.route_destination : ''}</td>
+            <td>${bk.from_date || ''}</td>
+            <td>${bk.payment_status || ''}</td>
+            <td><button data-action="del-booking" data-id="${bk.id}" class="btn ghost">Delete</button></td>
+          </tr>`).join('') : `<tr><td colspan="7" class="small muted">No matches</td></tr>`;
+      } catch(err){}
+    });
+
+    document.addEventListener('keydown', e => {
+      if (e.key === 'n') {
+        const active = document.querySelector('.nav-btn.active');
+        if (active) {
+          const v = active.dataset.view;
+          const mapping = { owners:'owner', boats:'boat', clients:'client', routes:'route', services:'service', bookings:'booking' };
+          openForm(mapping[v]);
+        }
+      }
+    });
+
+    window.__HBM = { refreshAll };
+  })();
+  </script>
+
+</body>
+</html>

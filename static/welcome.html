@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Backwater Voyage</title>
+    <link rel="stylesheet" href="Styles.css">
+</head>
+<body>
+    <header>
+        <div class="logo-container">
+            <img src="logo.png" alt="Logo" class="logo">
+            <h1>Backwater Voyage</h1>
+        </div>
+        <nav>
+            <a href="#" class="signin-btn" id="openLogin">Sign In</a>
+        </nav>
+    </header>
+
+    <main>
+        <div class="hero-content">
+            <h2>Experience the Serenity of Kerala Backwaters</h2>
+            <p>Relax, unwind, and explore the tranquil beauty of our traditional houseboats.</p>
+            <a href="#" class="book-btn" id="openLoginBook">Book Now</a>
+        </div>
+    </main>
+
+    <div id="loginModal" class="form-popup">
+        <form class="form-container">
+            <h2>Login</h2>
+
+            <label for="username"><b>Username</b></label>
+            <input type="text" placeholder="Enter Username" name="username" required>
+
+            <label for="password"><b>Password</b></label>
+            <input type="password" placeholder="Enter Password" name="password" required>
+
+            <button type="submit" class="btn">Login</button>
+            <button type="button" class="btn cancel" id="closeLogin">Close</button>
+        </form>
+    </div>
+
+    <script>
+    const loginModal = document.getElementById('loginModal');
+    const openLogin = document.getElementById('openLogin');
+    const openLoginBook = document.getElementById('openLoginBook');
+    const closeLogin = document.getElementById('closeLogin');
+
+    openLogin.addEventListener('click', function(e) {
+        e.preventDefault();
+        loginModal.style.display = 'block';
+    });
+
+    openLoginBook.addEventListener('click', function(e) {
+        e.preventDefault();
+        loginModal.style.display = 'block';
+    });
+
+    closeLogin.addEventListener('click', function() {
+        loginModal.style.display = 'none';
+    });
+
+    document.querySelector('.form-container').addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        const u = this.username.value.trim();
+        const p = this.password.value.trim();
+
+        if (u === 'admin' && p === 'password') {
+            window.location.href = 'index.html';
+        }
+    });
+</script>
+</body>
+</html>

@@ -1,0 +1,2 @@
+cd "C:\Users\HP\OneDrive\Documents\HouseboatProject\static"
+& "C:\Users\HP\AppData\Local\Programs\Python\Python313\python.exe" app.py
